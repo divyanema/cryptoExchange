@@ -1,5 +1,6 @@
 from flask import Flask, jsonify,Blueprint,request
 import shrimpy
+from apis.currency import RealTimeCurrencyExchangeRate
 
 routes= Blueprint('routes',__name__)
 
@@ -26,7 +27,11 @@ def register():
     link_account_response = client.link_account(user_id,exchange,exchange_public_key,
     exchange_secret_key)                                                        
     account_id = link_account_response["id"]
-    return jsonify({'user_id': user_id, 'account_id' :account_id})       
+    return jsonify({'user_id': user_id, 'account_id' :account_id}) 
+
+@routes.route('/login/email/<emailID>', methods=['GET'])
+def login(emailID): 
+    return jsonify({'user_id': "16a00060-71b7-4007-9f3e-f5e2aab82989"})           
 
 @routes.route('/trade/user/<userId>/account/<exchangeaccountId>', methods=['POST'])
 def createTrade(userId,exchangeaccountId):
@@ -37,6 +42,8 @@ def createTrade(userId,exchangeaccountId):
 @routes.route('/trade/user/<userId>/account/<exchangeaccountId>/trade/<tradeID>', methods=['GET'])
 def getTrade(userId,exchangeaccountId,tradeID):
     get_trade_response = client.get_trade_status(userId,exchangeaccountId,tradeID)
+    trade = get_trade_response["trade"]
+    trade["amount"] =  RealTimeCurrencyExchangeRate(float(trade["amount"]))
     return get_trade_response["trade"]   
 
 @routes.route('/trade/user/<userId>/account/<exchangeaccountId>/open', methods=['GET'])
