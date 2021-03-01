@@ -31,7 +31,11 @@ def register():
 
 @routes.route('/login/email/<emailID>', methods=['GET'])
 def login(emailID): 
-    return jsonify({'user_id': "16a00060-71b7-4007-9f3e-f5e2aab82989"})           
+    return jsonify({'user_id': "16a00060-71b7-4007-9f3e-f5e2aab82989"})          
+
+@routes.route('/getUserProfile/user/<userId>', methods=['GET'])
+def getUserProfile(userId): 
+    return jsonify({'user_id': userId})      
 
 @routes.route('/trade/user/<userId>', methods=['POST'])
 def createTrade(userId):
