@@ -33,57 +33,62 @@ def register():
 def login(emailID): 
     return jsonify({'user_id': "16a00060-71b7-4007-9f3e-f5e2aab82989"})           
 
-@routes.route('/trade/user/<userId>/account/<exchangeaccountId>', methods=['POST'])
-def createTrade(userId,exchangeaccountId):
+@routes.route('/trade/user/<userId>', methods=['POST'])
+def createTrade(userId):
     data=request.get_json()
-    create_trade_response = client.create_trade(userId,exchangeaccountId,data["fromSymbol"],data["toSymbol"],data["amount"])
+    create_trade_response = client.create_trade(userId,"87272",data["fromSymbol"],data["toSymbol"],data["amount"])
     return jsonify({'id': create_trade_response["id"]})      
 
-@routes.route('/trade/user/<userId>/account/<exchangeaccountId>/trade/<tradeID>', methods=['GET'])
-def getTrade(userId,exchangeaccountId,tradeID):
-    get_trade_response = client.get_trade_status(userId,exchangeaccountId,tradeID)
+@routes.route('/trade/user/<userId>/trade/<tradeID>', methods=['GET'])
+def getTrade(userId,tradeID):
+    get_trade_response = client.get_trade_status(userId,"87272",tradeID)
     trade = get_trade_response["trade"]
     trade["amount"] =  RealTimeCurrencyExchangeRate(float(trade["amount"]))
     return get_trade_response["trade"]   
 
-@routes.route('/trade/user/<userId>/account/<exchangeaccountId>/open', methods=['GET'])
-def getOpenTrade(userId,exchangeaccountId):
-    get_trade_response = client.list_active_trades(userId,exchangeaccountId)
+@routes.route('/trade/user/<userId>/open', methods=['GET'])
+def getOpenTrade(userId):
+    get_trade_response = client.list_active_trades(userId,"87272")
     return jsonify({'trades': get_trade_response})     
 
-@routes.route('/trade/user/<userId>/account/<exchangeaccountId>/all', methods=['GET'])
-def getAllTrade(userId,exchangeaccountId):
-    get_trade_response = client.get_trade_status(userId,exchangeaccountId,"2fc7db03-60a6-48a1-b281-100ca0cd7b06")
+@routes.route('/trade/user/<userId>/all', methods=['GET'])
+def getAllTrade(userId):
+    get_trade_response = client.get_trade_status(userId,"87272","2fc7db03-60a6-48a1-b281-100ca0cd7b06")
     return jsonify({'trades': get_trade_response["trade"]})  
 
-@routes.route('/limitOrder/user/<userId>/account/<exchangeaccountId>', methods=['POST'])
-def createlimitOrder(userId,exchangeaccountId):
+@routes.route('/limitOrder/user/<userId>', methods=['POST'])
+def createlimitOrder(userId):
     data=request.get_json()
-    create_trade_response = client.place_limit_order(userId,exchangeaccountId,data["baseSymbol"],data["quoteSymbol"],
+    create_trade_response = client.place_limit_order(userId,"87272",data["baseSymbol"],data["quoteSymbol"],
     data["quantity"],data["price"],data["side"],data["timeInForce"])
     return jsonify({'id': create_trade_response["id"]})  
 
-@routes.route('/limitOrder/user/<userId>/account/<exchangeaccountId>/trade/<tradeID>', methods=['GET'])
-def getlimitOrder(userId,exchangeaccountId,tradeID):
-    get_trade_response = client.get_limit_order_status(userId,exchangeaccountId,tradeID)
+@routes.route('/limitOrder/user/<userId>/trade/<tradeID>', methods=['GET'])
+def getlimitOrder(userId,tradeID):
+    get_trade_response = client.get_limit_order_status(userId,"87272",tradeID)
     return get_trade_response["order"]   
 
-@routes.route('/limitOrder/user/<userId>/account/<exchangeaccountId>/open', methods=['GET'])
-def getlimitOrderOpen(userId,exchangeaccountId):
-    get_trade_response = client.list_open_orders(userId,exchangeaccountId)
+@routes.route('/limitOrder/user/<userId>/open', methods=['GET'])
+def getlimitOrderOpen(userId):
+    get_trade_response = client.list_open_orders(userId,"87272")
     return jsonify({'orders': get_trade_response})     
 
-@routes.route('/limitOrder/user/<userId>/account/<exchangeaccountId>/all', methods=['GET'])
-def getlimitOrderAll(userId,exchangeaccountId):
-    get_trade_response = client.get_limit_order_status(userId,exchangeaccountId,"38b66928-46c3-4d65-b2f5-b0b847f6d896")
+@routes.route('/limitOrder/user/<userId>/all', methods=['GET'])
+def getlimitOrderAll(userId):
+    get_trade_response = client.get_limit_order_status(userId,"87272","38b66928-46c3-4d65-b2f5-b0b847f6d896")
     return jsonify({'orders': get_trade_response["order"]}) 
 
-@routes.route('/limitOrder/user/<userId>/account/<exchangeaccountId>/trade/<tradeID>/cancel', methods=['DELETE'])
-def getlimitOrderCancel(userId,exchangeaccountId,tradeID):
-    get_trade_response = client.cancel_limit_order(userId,exchangeaccountId,"38b66928-46c3-4d65-b2f5-b0b847f6d896")
+@routes.route('/limitOrder/user/<userId>/trade/<tradeID>/cancel', methods=['DELETE'])
+def getlimitOrderCancel(userId,tradeID):
+    get_trade_response = client.cancel_limit_order(userId,"87272","38b66928-46c3-4d65-b2f5-b0b847f6d896")
     return get_trade_response            
 
-@routes.route('/balance/user/<userId>/account/<exchangeaccountId>', methods=['GET'])
-def getBalance(userId,exchangeaccountId):
-    get_trade_response = client.get_balance(userId,exchangeaccountId)
-    return get_trade_response               
+@routes.route('/balance/user/<userId>', methods=['GET'])
+def getBalance(userId):
+    get_trade_response = client.get_balance(userId,"87272")
+    return get_trade_response  
+
+@routes.route('/marketData/from/<from_symbol>/to/<to_symbol>', methods=['GET'])
+def getmarketData(from_symbol,to_symbol):
+    get_trade_response = client.get_candles(exchange,from_symbol,from_symbol,"1d")
+    return jsonify({'volume': get_trade_response})                    
