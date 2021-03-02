@@ -32,7 +32,7 @@ def getSpecificData(table,col,param):
         sql_command = "SELECT * FROM {} where {}='{}';".format(str(table),str(col),str(param))
         print (sql_command)
         cur.execute(sql_command)
-        result = cur.fetchall()
+        result = cur.fetchone()
         cur.close()
         return result
     except (Exception, psycopg2.DatabaseError) as error:

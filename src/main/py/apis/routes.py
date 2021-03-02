@@ -36,19 +36,19 @@ def register():
     data=request.get_json()
     print(data)
     insertUserData(user_id,data["firstName"],data["lastName"],data["email"],data["panNo"],data["dob"],data["mobileNo"],account_id,"ACTIVE")
-    return jsonify({'user_id': user_id, 'account_id' :account_id}) 
+    return jsonify({'userId': user_id, 'accountId' :account_id}) 
 
 @routes.route('/login/email/<emailID>', methods=['GET'])
 def login(emailID): 
     result= getSpecificData("crypto_user","email",emailID)
-    user=json.dumps(result,default=str)
-    return user    
+    return jsonify({'userId': result[0]})      
 
 @routes.route('/getUserProfile/user/<userId>', methods=['GET'])
 def getUserProfile(userId): 
     result= getSpecificData("crypto_user","user_id",userId)
-    user=json.dumps(result,default=str)
-    return user
+    user=User(result[0],result[1],result[2],result[3],result[4],result[5],result[6],result[7],result[8])
+    print(user)
+    return jsonify({'userId': user.id, 'accountId' :user.exchangeAccountId,"firstName":user.firstName,"lastNme":user.lastName,"email":user.email,"panNo":user.panNo,"dob":user.dob,"mobileNo":user.mobileNo,"status":user.status})
 
 @routes.route('/trade/user/<userId>', methods=['POST'])
 def createTrade(userId):
