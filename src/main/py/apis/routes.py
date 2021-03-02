@@ -1,6 +1,12 @@
 from flask import Flask, jsonify,Blueprint,request
 import shrimpy
 from apis.currency import RealTimeCurrencyExchangeRate
+from database.data import getSpecificData
+from database.data import insertUserData
+from database.config import config
+from pozo.User import User
+import json
+from types import SimpleNamespace
 
 routes= Blueprint('routes',__name__)
 
@@ -27,15 +33,22 @@ def register():
     link_account_response = client.link_account(user_id,exchange,exchange_public_key,
     exchange_secret_key)                                                        
     account_id = link_account_response["id"]
+    data=request.get_json()
+    print(data)
+    insertUserData(user_id,data["firstName"],data["lastName"],data["email"],data["panNo"],data["dob"],data["mobileNo"],account_id,"ACTIVE")
     return jsonify({'user_id': user_id, 'account_id' :account_id}) 
 
 @routes.route('/login/email/<emailID>', methods=['GET'])
 def login(emailID): 
-    return jsonify({'user_id': "16a00060-71b7-4007-9f3e-f5e2aab82989"})          
+    result= getSpecificData("crypto_user","email",emailID)
+    user=json.dumps(result,default=str)
+    return user    
 
 @routes.route('/getUserProfile/user/<userId>', methods=['GET'])
 def getUserProfile(userId): 
-    return jsonify({'user_id': userId})      
+    result= getSpecificData("crypto_user","user_id",userId)
+    user=json.dumps(result,default=str)
+    return user
 
 @routes.route('/trade/user/<userId>', methods=['POST'])
 def createTrade(userId):
