@@ -97,4 +97,44 @@ def getSpecificDataList(table,col,param):
     finally:
         if conn is not None:
             conn.close()
-            print('Database connection closed.')            
+            print('Database connection closed.')
+ 
+ 
+ 
+def insertWallet(val1,val2,val3,val4,val5,val6):
+    conn = None
+    try:
+        params = config()
+        print('Connecting to the PostgreSQL database...')
+        conn = psycopg2.connect(**params)        
+        cur = conn.cursor()
+        sql_command="INSERT INTO crypto_wallet(	wallet_id, user_id, type, balance, updated_timestamp, status) VALUES ('{}', '{}', '{}', '{}', '{}', '{}');".format(str(val1),str(val2),str(val3),str(val4),str(val5),str(val6))
+        print(sql_command)
+        cur.execute(sql_command)
+        conn.commit()
+        print("Record inserted successfully")
+        cur.close()
+    finally:
+        if conn is not None:
+            conn.close()
+            print('Database connection closed.')
+
+
+def deleteWallet(val1,val2,val3,val4):
+    conn = None
+    try:
+        params = config()
+        print('Connecting to the PostgreSQL database...')
+        conn = psycopg2.connect(**params)        
+        cur = conn.cursor()
+        sql_command="UPDATE crypto_wallet SET updated_timestamp='{}', status='{}' WHERE {}='{}';".format(str(val1),str(val2),str(val3),str(val4))
+        print(sql_command)
+        cur.execute(sql_command)
+        conn.commit()
+        print("Record updated successfully")
+        cur.close()
+    finally:
+        if conn is not None:
+            conn.close()
+            print('Database connection closed.')
+                      

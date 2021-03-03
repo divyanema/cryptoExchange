@@ -1,12 +1,14 @@
-from flask import Flask, jsonify,Blueprint,request
+from flask import Flask, jsonify,Blueprint,request,Response
 import shrimpy
 from apis.currency import RealTimeCurrencyExchangeRate,RealTimeCurrencyExchangeRate1
-from database.data import getSpecificData, getSpecificDataList
-from database.data import insertUserData,insertTrade
+from database.data import getSpecificData, getSpecificDataList,insertUserData,insertTrade,insertWallet,deleteWallet
 from database.config import config
 from pozo.User import User
+from pozo.Wallet import Wallet
+import uuid
+from datetime import datetime, timezone
 import json
-from types import SimpleNamespace
+
 
 routes= Blueprint('routes',__name__)
 
@@ -161,4 +163,56 @@ def getBalance(userId):
 @routes.route('/marketData/from/<from_symbol>/to/<to_symbol>', methods=['GET'])
 def getmarketData(from_symbol,to_symbol):
     get_trade_response = client.get_candles(exchange,from_symbol,from_symbol,"1d")
-    return jsonify({'volume': get_trade_response})                    
+    return jsonify({'volume': get_trade_response})
+
+@routes.route('/wallet/updateBalance', methods=['PUT'])
+def createWallet():
+    data=request.get_json()
+    print(data)
+    walletId=uuid.uuid1()
+    print (walletId)
+    currentTimeStamp = datetime.now(timezone.utc)
+    print(currentTimeStamp)
+    insertWallet(walletId,data["userId"],data["type"],data["balance"],currentTimeStamp,"ACTIVE")
+    return Response(status=200)
+
+@routes.route('/wallet/getBalance/<userId>', methods=['GET'])
+def getWalletBalance(userId):
+    result= getSpecificData("crypto_wallet","user_id",userId)
+    print(userId,result[3])
+    return jsonify({'userId': userId, 'balance' :result[3]})
+
+@routes.route('/wallet/getBalanceHistory/<userId>', methods=['GET'])
+def getWalletBalanceHIstory(userId):
+    walletHistoryDetails = getSpecificDataList("crypto_wallet","user_id",userId)
+    print(walletHistoryDetails)
+    thislist =[]
+    wallet=Wallet(None,None,None,None,None,None)
+    for walletHistory in walletHistoryDetails:
+        wallet=mapWallet(thislist,wallet,walletHistory[0],walletHistory[1],walletHistory[2],float(walletHistory[3]),str(walletHistory[4]),walletHistory[5])
+    print("List:",thislist)  
+    return thislist
+
+
+@routes.route('/wallet/delete/<userId>', methods=['GET'])
+def deleteBalance(userId):
+    print(userId)
+    currentTimeStamp = datetime.now(timezone.utc)
+    print(currentTimeStamp)
+    deleteWallet(currentTimeStamp,"INACTIVE","user_id",userId)
+    return Response(status=200)
+
+
+def mapWallet(thislist,wallet,walletId,userId,type,balance,updatedTimestamp,status):
+    print(type)
+    wallet.walletId=walletId
+    wallet.userId=userId
+    wallet.type=type
+    wallet.balance=balance
+    wallet.updatedTimestamp=updatedTimestamp
+    wallet.status=status
+    print("wallet inside mapWallet",wallet)
+    thislist.append(wallet)
+    return wallet
+
+    
