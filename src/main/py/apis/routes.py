@@ -1,8 +1,8 @@
 from flask import Flask, jsonify,Blueprint,request
 import shrimpy
-from apis.currency import RealTimeCurrencyExchangeRate
-from database.data import getSpecificData
-from database.data import insertUserData
+from apis.currency import RealTimeCurrencyExchangeRate,RealTimeCurrencyExchangeRate1
+from database.data import getSpecificData, getSpecificDataList
+from database.data import insertUserData,insertTrade
 from database.config import config
 from pozo.User import User
 import json
@@ -24,6 +24,8 @@ def healthcheck():
 @routes.route('/dashboard', methods=['GET'])
 def dashboard(): 
     ticker = client.get_ticker('bittrex')
+    for t in ticker: 
+        t["priceUsd"]=RealTimeCurrencyExchangeRate(float(t["priceUsd"]))
     return jsonify({'ticker': ticker})  
 
 @routes.route('/register', methods=['POST'])
@@ -53,56 +55,107 @@ def getUserProfile(userId):
 @routes.route('/trade/user/<userId>', methods=['POST'])
 def createTrade(userId):
     data=request.get_json()
-    create_trade_response = client.create_trade(userId,"87272",data["fromSymbol"],data["toSymbol"],data["amount"])
+    result= getSpecificData("crypto_user","user_id",userId)
+    data["amount"]= RealTimeCurrencyExchangeRate1(float(data["amount"]))
+    print(round(data["amount"],2))
+    create_trade_response = client.create_trade(userId,result[7],data["fromSymbol"],data["toSymbol"],round(data["amount"],2))
+    insertTrade(userId,create_trade_response["id"])   
     return jsonify({'id': create_trade_response["id"]})      
 
 @routes.route('/trade/user/<userId>/trade/<tradeID>', methods=['GET'])
 def getTrade(userId,tradeID):
-    get_trade_response = client.get_trade_status(userId,"87272",tradeID)
+    result= getSpecificData("crypto_user","user_id",userId)
+    get_trade_response = client.get_trade_status(userId,result[7],tradeID)
     trade = get_trade_response["trade"]
     trade["amount"] =  RealTimeCurrencyExchangeRate(float(trade["amount"]))
+    if trade["fromSymbol"]=="INR":
+        print("call remove from wallet")
+    if trade["toSymbol"]=="INR":
+        print("call add from wallet") 
     return get_trade_response["trade"]   
 
 @routes.route('/trade/user/<userId>/open', methods=['GET'])
 def getOpenTrade(userId):
-    get_trade_response = client.list_active_trades(userId,"87272")
+    result= getSpecificData("crypto_user","user_id",userId)
+    get_trade_response = client.list_active_trades(userId,result[7])
+    for trade in get_trade_response: 
+        trade1=trade["trade"]
+        trade1["amount"]= RealTimeCurrencyExchangeRate(float(trade1["amount"]))
     return jsonify({'trades': get_trade_response})     
 
 @routes.route('/trade/user/<userId>/all', methods=['GET'])
 def getAllTrade(userId):
-    get_trade_response = client.get_trade_status(userId,"87272","2fc7db03-60a6-48a1-b281-100ca0cd7b06")
-    return jsonify({'trades': get_trade_response["trade"]})  
+    result= getSpecificData("crypto_user","user_id",userId)
+    trades= getSpecificDataList("crypto_trade","user_id",userId)
+    print(trades)
+    thislist =[]
+    for trade in trades:    
+        get_trade_response = client.get_trade_status(userId,result[7],trade[1])
+        print(get_trade_response)
+        trade1=get_trade_response["trade"]
+        trade1["amount"]= RealTimeCurrencyExchangeRate(float(trade1["amount"]))
+        thislist.append(get_trade_response["trade"])
+    print (thislist)   
+    return jsonify({'trades': thislist})  
 
 @routes.route('/limitOrder/user/<userId>', methods=['POST'])
 def createlimitOrder(userId):
     data=request.get_json()
-    create_trade_response = client.place_limit_order(userId,"87272",data["baseSymbol"],data["quoteSymbol"],
-    data["quantity"],data["price"],data["side"],data["timeInForce"])
+    result= getSpecificData("crypto_user","user_id",userId)
+    data["price"]= RealTimeCurrencyExchangeRate1(float(data["price"]))
+    create_trade_response = client.place_limit_order(userId,result[7],data["baseSymbol"],data["quoteSymbol"],
+    data["quantity"],round(data["price"],2),data["side"],data["timeInForce"])
+    insertTrade(userId,create_trade_response["id"])
     return jsonify({'id': create_trade_response["id"]})  
 
 @routes.route('/limitOrder/user/<userId>/trade/<tradeID>', methods=['GET'])
 def getlimitOrder(userId,tradeID):
-    get_trade_response = client.get_limit_order_status(userId,"87272",tradeID)
+    result= getSpecificData("crypto_user","user_id",userId)
+    get_trade_response = client.get_limit_order_status(userId,result[7],tradeID)
+    trade = get_trade_response["order"]
+    trade["amount"] =  RealTimeCurrencyExchangeRate(float(trade["amount"]))
+    if trade["fromSymbol"]=="INR":
+        print("call remove from wallet")
+    if trade["toSymbol"]=="INR":
+        print("call add from wallet")
     return get_trade_response["order"]   
 
 @routes.route('/limitOrder/user/<userId>/open', methods=['GET'])
 def getlimitOrderOpen(userId):
-    get_trade_response = client.list_open_orders(userId,"87272")
+    result= getSpecificData("crypto_user","user_id",userId)
+    get_trade_response = client.list_open_orders(userId,result[7])
+    for trade in get_trade_response: 
+        trade1=trade["order"]
+        trade1["amount"]= RealTimeCurrencyExchangeRate(float(trade1["amount"]))
     return jsonify({'orders': get_trade_response})     
 
 @routes.route('/limitOrder/user/<userId>/all', methods=['GET'])
 def getlimitOrderAll(userId):
-    get_trade_response = client.get_limit_order_status(userId,"87272","38b66928-46c3-4d65-b2f5-b0b847f6d896")
-    return jsonify({'orders': get_trade_response["order"]}) 
+    result= getSpecificData("crypto_user","user_id",userId)
+    trades= getSpecificDataList("crypto_trade","user_id",userId)
+    print(trades)
+    thislist =[]
+    for trade in trades:    
+        get_trade_response = client.get_limit_order_status(userId,result[7],trade[1])
+        print(get_trade_response)
+        trade1=get_trade_response["order"]
+        trade1["amount"]= RealTimeCurrencyExchangeRate(float(trade1["amount"]))
+        thislist.append(get_trade_response["order"])
+    print (thislist)   
+    return jsonify({'orders': thislist}) 
 
 @routes.route('/limitOrder/user/<userId>/trade/<tradeID>/cancel', methods=['DELETE'])
 def getlimitOrderCancel(userId,tradeID):
-    get_trade_response = client.cancel_limit_order(userId,"87272","38b66928-46c3-4d65-b2f5-b0b847f6d896")
+    result= getSpecificData("crypto_user","user_id",userId)
+    get_trade_response = client.cancel_limit_order(userId,result[7],tradeID)
     return get_trade_response            
 
 @routes.route('/balance/user/<userId>', methods=['GET'])
 def getBalance(userId):
-    get_trade_response = client.get_balance(userId,"87272")
+    result= getSpecificData("crypto_user","user_id",userId)
+    get_trade_response = client.get_balance(userId,result[7])
+    balances=get_trade_response["balances"]
+    balances["usdValue"]=RealTimeCurrencyExchangeRate(float(balances["usdValue"]))
     return get_trade_response  
 
 @routes.route('/marketData/from/<from_symbol>/to/<to_symbol>', methods=['GET'])
