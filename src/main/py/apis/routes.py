@@ -199,8 +199,6 @@ def updateWalletuser(userId):
     return jsonify({'status' : 'ok'})
 
 def updateWalletusers(userId,type,balance):
-    data=request.get_json()
-    print(data)
     currentTimeStamp = datetime.now(timezone.utc)
     print(currentTimeStamp)
     result= getSpecificData("crypto_wallet","user_id",userId)
@@ -219,13 +217,31 @@ def updateWalletusers(userId,type,balance):
 @routes.route('/wallet/getBalance/<userId>', methods=['GET'])
 def getWalletBalance(userId):
     result= getSpecificData("crypto_wallet","user_id",userId)
-    print(userId,result[3])
-    return jsonify({'userId': userId, 'balance' :result[2]})
+    balance=float(result[2])
+    print("else case",balance)
+    return jsonify({'userId': userId, 'balance' :balance})
 
 @routes.route('/wallet/getBalanceHistory/<userId>', methods=['GET'])
 def getWalletBalanceHIstory(userId):
+    print(userId)
     walletHistoryDetails = getSpecificDataList("crypto_wallet_history","user_id",userId)
-    return jsonify({'wallet': walletHistoryDetails})
+    print(walletHistoryDetails)
+    thislist =[]
+    for row in walletHistoryDetails:
+        print(row[0])
+        walletHistory={"walletId":row[0],"userId":row[1],"type":row[2],"balance":float(row[3]),"updatedTimestamp":str(row[4]),"status":row[5]}
+        thislist.append(walletHistory)
+    print("List:",thislist)
+    return jsonify(thislist)
+    
+@routes.route('/wallet/delete/<userId>', methods=['GET'])
+def deleteBalance(userId):
+    print(userId)
+    currentTimeStamp = datetime.now(timezone.utc)
+    print(currentTimeStamp)
+    deleteWallet(currentTimeStamp,"INACTIVE","user_id",userId)
+    return jsonify({'status' : 'ok'})
+
 
 
     

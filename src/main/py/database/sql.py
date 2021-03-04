@@ -77,12 +77,12 @@ CREATE TABLE public.crypto_wallet_history
 
 TABLESPACE pg_default;
 
-ALTER TABLE public.crypto_wallet_history
+ALTER TABLE public.crypto_trade
     OWNER to postgres;    
 
 
-CREATE TABLE public.crypto_wallet_history
+CREATE TABLE public.crypto_trade
 (
     user_id character varying(50) COLLATE pg_catalog."default" NOT NULL,
     trade_id character varying(50) COLLATE pg_catalog."default" NOT NULL
-}   
+)   
