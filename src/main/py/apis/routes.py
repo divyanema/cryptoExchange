@@ -1,7 +1,7 @@
 from flask import Flask, jsonify,Blueprint,request,Response
 import shrimpy
 from apis.currency import RealTimeCurrencyExchangeRate,RealTimeCurrencyExchangeRate1
-from database.data import getSpecificData, getSpecificDataList,insertUserData,insertTrade,insertWallet,deleteWallet
+from database.data import getSpecificData, getSpecificDataList,insertUserData,insertTrade,insertWallet,deleteWallet,updateWallet
 from database.config import config
 from pozo.User import User
 from pozo.Wallet import Wallet
@@ -40,6 +40,11 @@ def register():
     data=request.get_json()
     print(data)
     insertUserData(user_id,data["firstName"],data["lastName"],data["email"],data["panNo"],data["dob"],data["mobileNo"],account_id,"ACTIVE")
+    walletId=uuid.uuid1()
+    print (walletId)
+    currentTimeStamp = datetime.now(timezone.utc)
+    print(currentTimeStamp)
+    insertWallet(walletId,user_id,"ADD",0,currentTimeStamp,"ACTIVE")
     return jsonify({'userId': user_id, 'accountId' :account_id}) 
 
 @routes.route('/login/email/<emailID>', methods=['GET'])
@@ -166,7 +171,7 @@ def getmarketData(from_symbol,to_symbol):
     return jsonify({'volume': get_trade_response})
 
 @routes.route('/wallet/updateBalance', methods=['PUT'])
-def createWallet():
+def updateWallet():
     data=request.get_json()
     print(data)
     walletId=uuid.uuid1()

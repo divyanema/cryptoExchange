@@ -137,4 +137,22 @@ def deleteWallet(val1,val2,val3,val4):
         if conn is not None:
             conn.close()
             print('Database connection closed.')
+
+def updateWallet(val1,val2,val3,val4):
+    conn = None
+    try:
+        params = config()
+        print('Connecting to the PostgreSQL database...')
+        conn = psycopg2.connect(**params)        
+        cur = conn.cursor()
+        sql_command="UPDATE crypto_wallet SET balance='{}', updated_timestamp='{}' WHERE {}='{}';".format(str(val1),str(val2),str(val3),str(val4))
+        print(sql_command)
+        cur.execute(sql_command)
+        conn.commit()
+        print("Record updated successfully")
+        cur.close()
+    finally:
+        if conn is not None:
+            conn.close()
+            print('Database connection closed.')
                       
