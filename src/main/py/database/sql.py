@@ -44,7 +44,6 @@ CREATE TABLE public.crypto_wallet
 (
     wallet_id character varying(50) COLLATE pg_catalog."default" NOT NULL,
     user_id character varying(50) COLLATE pg_catalog."default" NOT NULL,
-    type character varying(100) COLLATE pg_catalog."default",
     balance numeric,
     updated_timestamp timestamp with time zone,
     status character varying(100) COLLATE pg_catalog."default",
@@ -60,3 +59,30 @@ TABLESPACE pg_default;
 
 ALTER TABLE public.crypto_wallet
     OWNER to postgres;
+
+CREATE TABLE public.crypto_wallet_history
+(
+    wallet_id character varying(50) COLLATE pg_catalog."default" NOT NULL,
+    user_id character varying(50) COLLATE pg_catalog."default" NOT NULL,
+    type character varying(100) COLLATE pg_catalog."default",
+    balance numeric,
+    updated_timestamp timestamp with time zone,
+    status character varying(100) COLLATE pg_catalog."default",
+    CONSTRAINT user_wallet_foreign_key FOREIGN KEY (user_id)
+        REFERENCES public.crypto_user (user_id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE public.crypto_wallet_history
+    OWNER to postgres;    
+
+
+CREATE TABLE public.crypto_wallet_history
+(
+    user_id character varying(50) COLLATE pg_catalog."default" NOT NULL,
+    trade_id character varying(50) COLLATE pg_catalog."default" NOT NULL
+}   

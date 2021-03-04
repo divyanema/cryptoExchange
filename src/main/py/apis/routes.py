@@ -1,7 +1,7 @@
 from flask import Flask, jsonify,Blueprint,request,Response
 import shrimpy
 from apis.currency import RealTimeCurrencyExchangeRate,RealTimeCurrencyExchangeRate1
-from database.data import getSpecificData, getSpecificDataList,insertUserData,insertTrade,insertWallet,deleteWallet,updateWallet
+from database.data import getSpecificData, getSpecificDataList,insertUserData,insertWalletHistory,insertTrade,insertWallet,deleteWallet,updateWallet
 from database.config import config
 from pozo.User import User
 from pozo.Wallet import Wallet
@@ -44,7 +44,7 @@ def register():
     print (walletId)
     currentTimeStamp = datetime.now(timezone.utc)
     print(currentTimeStamp)
-    insertWallet(walletId,user_id,"ADD",0,currentTimeStamp,"ACTIVE")
+    insertWallet(walletId,user_id,0,currentTimeStamp,"ACTIVE")
     return jsonify({'userId': user_id, 'accountId' :account_id}) 
 
 @routes.route('/login/email/<emailID>', methods=['GET'])
@@ -66,6 +66,9 @@ def createTrade(userId):
     data["amount"]= RealTimeCurrencyExchangeRate1(float(data["amount"]))
     print(round(data["amount"],2))
     create_trade_response = client.create_trade(userId,result[7],data["fromSymbol"],data["toSymbol"],round(data["amount"],2))
+    print(create_trade_response)
+    if 'id' not in create_trade_response:
+        return jsonify({'exception': create_trade_response["error"]})  
     insertTrade(userId,create_trade_response["id"])   
     return jsonify({'id': create_trade_response["id"]})      
 
@@ -73,18 +76,22 @@ def createTrade(userId):
 def getTrade(userId,tradeID):
     result= getSpecificData("crypto_user","user_id",userId)
     get_trade_response = client.get_trade_status(userId,result[7],tradeID)
+    if 'trade' not in get_trade_response:
+        return jsonify({'exception': get_trade_response["error"]}) 
     trade = get_trade_response["trade"]
     trade["amount"] =  RealTimeCurrencyExchangeRate(float(trade["amount"]))
     if trade["fromSymbol"]=="INR":
-        print("call remove from wallet")
+        updateWalletusers(userId,"SELL",trade["amount"])
     if trade["toSymbol"]=="INR":
-        print("call add from wallet") 
+        updateWalletusers(userId,"BUY",trade["amount"])
     return get_trade_response["trade"]   
 
 @routes.route('/trade/user/<userId>/open', methods=['GET'])
 def getOpenTrade(userId):
     result= getSpecificData("crypto_user","user_id",userId)
     get_trade_response = client.list_active_trades(userId,result[7])
+    if 'trade' not in get_trade_response:
+        return jsonify({'exception': get_trade_response["error"]}) 
     for trade in get_trade_response: 
         trade1=trade["trade"]
         trade1["amount"]= RealTimeCurrencyExchangeRate(float(trade1["amount"]))
@@ -98,6 +105,8 @@ def getAllTrade(userId):
     thislist =[]
     for trade in trades:    
         get_trade_response = client.get_trade_status(userId,result[7],trade[1])
+        if 'trade' not in get_trade_response:
+            return jsonify({'exception': get_trade_response["error"]}) 
         print(get_trade_response)
         trade1=get_trade_response["trade"]
         trade1["amount"]= RealTimeCurrencyExchangeRate(float(trade1["amount"]))
@@ -112,6 +121,8 @@ def createlimitOrder(userId):
     data["price"]= RealTimeCurrencyExchangeRate1(float(data["price"]))
     create_trade_response = client.place_limit_order(userId,result[7],data["baseSymbol"],data["quoteSymbol"],
     data["quantity"],round(data["price"],2),data["side"],data["timeInForce"])
+    if 'id' not in create_trade_response:
+        return jsonify({'exception': create_trade_response["error"]}) 
     insertTrade(userId,create_trade_response["id"])
     return jsonify({'id': create_trade_response["id"]})  
 
@@ -119,18 +130,22 @@ def createlimitOrder(userId):
 def getlimitOrder(userId,tradeID):
     result= getSpecificData("crypto_user","user_id",userId)
     get_trade_response = client.get_limit_order_status(userId,result[7],tradeID)
+    if 'order' not in get_trade_response:
+        return jsonify({'exception': get_trade_response["error"]}) 
     trade = get_trade_response["order"]
     trade["amount"] =  RealTimeCurrencyExchangeRate(float(trade["amount"]))
     if trade["fromSymbol"]=="INR":
-        print("call remove from wallet")
+        updateWalletusers(userId,"SELL",trade["amount"])
     if trade["toSymbol"]=="INR":
-        print("call add from wallet")
+        updateWalletusers(userId,"BUY",trade["amount"])
     return get_trade_response["order"]   
 
 @routes.route('/limitOrder/user/<userId>/open', methods=['GET'])
 def getlimitOrderOpen(userId):
     result= getSpecificData("crypto_user","user_id",userId)
     get_trade_response = client.list_open_orders(userId,result[7])
+    if 'order' not in get_trade_response:
+        return jsonify({'exception': get_trade_response["error"]}) 
     for trade in get_trade_response: 
         trade1=trade["order"]
         trade1["amount"]= RealTimeCurrencyExchangeRate(float(trade1["amount"]))
@@ -144,6 +159,8 @@ def getlimitOrderAll(userId):
     thislist =[]
     for trade in trades:    
         get_trade_response = client.get_limit_order_status(userId,result[7],trade[1])
+        if 'order' not in get_trade_response:
+            return jsonify({'exception': get_trade_response["error"]}) 
         print(get_trade_response)
         trade1=get_trade_response["order"]
         trade1["amount"]= RealTimeCurrencyExchangeRate(float(trade1["amount"]))
@@ -161,8 +178,12 @@ def getlimitOrderCancel(userId,tradeID):
 def getBalance(userId):
     result= getSpecificData("crypto_user","user_id",userId)
     get_trade_response = client.get_balance(userId,result[7])
+    if 'balances' not in get_trade_response:
+        return jsonify({'exception': get_trade_response["balances"]}) 
     balances=get_trade_response["balances"]
-    balances["usdValue"]=RealTimeCurrencyExchangeRate(float(balances["usdValue"]))
+    print(balances)
+    if balances  :
+        balances["usdValue"]=RealTimeCurrencyExchangeRate(float(balances["usdValue"]))
     return get_trade_response  
 
 @routes.route('/marketData/from/<from_symbol>/to/<to_symbol>', methods=['GET'])
@@ -170,54 +191,41 @@ def getmarketData(from_symbol,to_symbol):
     get_trade_response = client.get_candles(exchange,from_symbol,from_symbol,"1d")
     return jsonify({'volume': get_trade_response})
 
-@routes.route('/wallet/updateBalance', methods=['PUT'])
-def updateWallet():
+@routes.route('/wallet/updateBalance/<userId>', methods=['PUT'])
+def updateWalletuser(userId):
     data=request.get_json()
     print(data)
-    walletId=uuid.uuid1()
-    print (walletId)
+    updateWalletusers(userId,data["type"],data["balance"])
+    return jsonify({'status' : 'ok'})
+
+def updateWalletusers(userId,type,balance):
+    data=request.get_json()
+    print(data)
     currentTimeStamp = datetime.now(timezone.utc)
     print(currentTimeStamp)
-    insertWallet(walletId,data["userId"],data["type"],data["balance"],currentTimeStamp,"ACTIVE")
-    return Response(status=200)
+    result= getSpecificData("crypto_wallet","user_id",userId)
+    if (type=='ADD') or (type=='SELL'):
+        print(result[2])
+        new_balance=float(result[2])+float(balance)
+        print(new_balance)
+    if (type=='WITHDRAW') or (type=='BUY'):
+        new_balance=float(result[2])- float(balance) 
+        print(new_balance)
+    print(new_balance)       
+    updateWallet(result[0],userId,new_balance,currentTimeStamp)
+    insertWalletHistory(result[0],userId,type,balance,currentTimeStamp,"ACTIVE")
+    return jsonify({'status' : 'ok'})    
 
 @routes.route('/wallet/getBalance/<userId>', methods=['GET'])
 def getWalletBalance(userId):
     result= getSpecificData("crypto_wallet","user_id",userId)
     print(userId,result[3])
-    return jsonify({'userId': userId, 'balance' :result[3]})
+    return jsonify({'userId': userId, 'balance' :result[2]})
 
 @routes.route('/wallet/getBalanceHistory/<userId>', methods=['GET'])
 def getWalletBalanceHIstory(userId):
-    walletHistoryDetails = getSpecificDataList("crypto_wallet","user_id",userId)
-    print(walletHistoryDetails)
-    thislist =[]
-    wallet=Wallet(None,None,None,None,None,None)
-    for walletHistory in walletHistoryDetails:
-        wallet=mapWallet(thislist,wallet,walletHistory[0],walletHistory[1],walletHistory[2],float(walletHistory[3]),str(walletHistory[4]),walletHistory[5])
-    print("List:",thislist)  
-    return thislist
+    walletHistoryDetails = getSpecificDataList("crypto_wallet_history","user_id",userId)
+    return jsonify({'wallet': walletHistoryDetails})
 
-
-@routes.route('/wallet/delete/<userId>', methods=['GET'])
-def deleteBalance(userId):
-    print(userId)
-    currentTimeStamp = datetime.now(timezone.utc)
-    print(currentTimeStamp)
-    deleteWallet(currentTimeStamp,"INACTIVE","user_id",userId)
-    return Response(status=200)
-
-
-def mapWallet(thislist,wallet,walletId,userId,type,balance,updatedTimestamp,status):
-    print(type)
-    wallet.walletId=walletId
-    wallet.userId=userId
-    wallet.type=type
-    wallet.balance=balance
-    wallet.updatedTimestamp=updatedTimestamp
-    wallet.status=status
-    print("wallet inside mapWallet",wallet)
-    thislist.append(wallet)
-    return wallet
 
     
